@@ -1,0 +1,118 @@
+// use prisma-8
+
+enum UserRole {
+  STUDENT
+  FACULTY
+  ADMIN
+}
+
+enum ProjectStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  ARCHIVED
+  REJECTED
+}
+
+enum ProjectCategory {
+  IOT
+  WEB
+  AI
+  MOBILE
+  DATA
+  ROBOTICS
+  OTHER
+}
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  code      String   @unique
+  users     User[]   @relation("DepartmentUsers")
+  projects  Project[] @relation("DepartmentProjects")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@index([name])
+  @@index([code])
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  name        String
+  email       String       @unique
+  role        UserRole     @default(STUDENT)
+  departmentId Int?
+  department  Department?  @relation("DepartmentUsers", fields: [departmentId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now())
+
+  authoredProjects Project[]       @relation("ProjectAuthor")
+  guidedProjects   Project[]       @relation("ProjectGuide")
+  projectMemberships ProjectMember[] @relation("UserProjectMemberships")
+  uploadedDocuments ProjectDocument[] @relation("DocumentUploader")
+
+  @@index([role])
+  @@index([departmentId])
+}
+
+model Project {
+  id              Int             @id @default(autoincrement())
+  title           String
+  description     String
+  departmentId    Int
+  department      Department      @relation("DepartmentProjects", fields: [departmentId], references: [id])
+  academicYear    String
+  category        ProjectCategory @default(OTHER)
+  technologies    String[]
+  status          ProjectStatus   @default(DRAFT)
+  studentId       Int?
+  student         User?           @relation("ProjectAuthor", fields: [studentId], references: [id])
+  facultyId       Int?
+  faculty         User?           @relation("ProjectGuide", fields: [facultyId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @default(now())
+
+  members         ProjectMember[] @relation("ProjectMembers")
+  documents       ProjectDocument[] @relation("ProjectDocuments")
+
+  @@index([departmentId])
+  @@index([status])
+  @@index([academicYear])
+  @@index([studentId])
+  @@index([facultyId])
+  @@index([title])
+}
+
+model ProjectMember {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  project   Project  @relation("ProjectMembers", fields: [projectId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation("UserProjectMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("MEMBER")
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ProjectDocument {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  project     Project  @relation("ProjectDocuments", fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedById Int?
+  uploadedBy  User?    @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  name        String
+  fileType    String?
+  mimeType    String?
+  fileUrl     String?
+  sizeBytes   Int?
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([uploadedById])
+  @@index([name])
+}
