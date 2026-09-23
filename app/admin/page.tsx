@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { db } from "@/src/prisma/db";
 
 export default async function AdminPage() {
